@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Interactive structural beam calculator">
+  <title>SpanLab — Structural Beam Studio</title>
+
+  <style>
+    :root {
+      --background: #07111f;
+      --panel: #10243a;
+      --border: rgba(148, 184, 219, 0.18);
+      --text: #f1f7ff;
+      --muted: #94a9be;
+      --cyan: #35d8da;
+      --green: #b6f45d;
+      --yellow: #ffbd59;
+      --red: #ff6b7d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 85% 0%, rgba(53, 216, 218, 0.15), transparent 35rem),
+        var(--background);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: auto;
+    }
+
+    header {
+      min-height: 75px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      color: #031015;
+      background: var(--cyan);
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(53, 216, 218, 0.35);
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .hero {
+      padding: 65px 0 38px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 35px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      color: var(--cyan);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 750px;
+      margin: 14px 0 22px;
+      font-size: clamp(2.7rem, 6vw, 5.2rem);
+      line-height: 0.96;
+      letter-spacing: -0.06em;
+    }
+
+    h1 span {
+      color: var(--cyan);
+    }
+
+    .hero p {
+      max-width: 650px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .formula-card {
+      padding: 22px;
+      background: rgba(16, 36, 58, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+
+    .formula-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.2rem;
+    }
+
+    .formula {
+      margin-top: 15px;
+      color: var(--green);
+      font-family: monospace;
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 22px;
+      padding-bottom: 70px;
+    }
+
+    .panel {
+      background: rgba(16, 36, 58, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+    }
+
+    .controls,
+    .results {
+      padding: 24px;
+    }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .panel-heading h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      color: var(--cyan);
+      background: rgba(53, 216, 218, 0.1);
+      border-radius: 100px;
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+
+    .field {
+      margin-bottom: 19px;
+    }
+
+    .field-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 9px;
+    }
+
+    label {
+      color: #d6e3ef;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    output {
+      color: var(--cyan);
+      font-size: 0.82rem;
+      font-weight: bold;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+      accent-color: var(--cyan);
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      color: var(--text);
+      background: #142b43;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      outline: none;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    button {
+      padding: 12px;
+      border: 0;
+      border-radius: 11px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    .primary-button {
+      color: #031015;
+      background: var(--cyan);
+    }
+
+    .secondary-button {
+      color: var(--text);
+      background: #183149;
+      border: 1px solid var(--border);
+    }
+
+    .beam-stage {
+      position: relative;
+      min-height: 300px;
+      overflow: hidden;
+      background: linear-gradient(
+        rgba(53, 216, 218, 0.05),
+        rgba(4, 12, 23, 0.15)
+      );
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .beam {
+      position: absolute;
+      top: 145px;
+      right: 9%;
+      left: 9%;
+      height: 18px;
+      background: linear-gradient(90deg, var(--cyan), #9af4ef);
+      border-radius: 4px;
+      box-shadow: 0 0 24px rgba(53, 216, 218, 0.3);
+    }
+
+    .load-arrow {
+      position: absolute;
+      top: 35px;
+      left: 50%;
+      color: var(--yellow);
+      text-align: center;
+      font-weight: bold;
+      transform: translateX(-50%);
+      transition: left 0.35s;
+    }
+
+    .load-arrow i {
+      position: relative;
+      display: block;
+      width: 3px;
+      height: 75px;
+      margin: 7px auto 0;
+      background: var(--yellow);
+    }
+
+    .load-arrow i::after {
+      content: "";
+      position: absolute;
+      bottom: -3px;
+      left: -6px;
+      border: 7px solid transparent;
+      border-top-color: var(--yellow);
+    }
+
+    .support {
+      position: absolute;
+      top: 163px;
+      width: 0;
+      height: 0;
+      border-right: 22px solid transparent;
+      border-bottom: 40px solid #67819a;
+      border-left: 22px solid transparent;
+    }
+
+    .left-support {
+      left: calc(9% - 18px);
+    }
+
+    .right-support {
+      right: calc(9% - 18px);
+    }
+
+    .dimension {
+      position: absolute;
+      top: 230px;
+      right: 10%;
+      left: 10%;
+      padding-top: 10px;
+      color: var(--muted);
+      text-align: center;
+      border-top: 1px solid #66829a;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      padding: 17px;
+      background: rgba(15, 36, 58, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+    }
+
+    .metric small {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: clamp(1.05rem, 2.3vw, 1.5rem);
+    }
+
+    .metric em {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-style: normal;
+    }
+
+    .safety-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      margin-top: 16px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+    }
+
+    .safety-card h3 {
+      margin: 0 0 5px;
+      font-size: 0.95rem;
+    }
+
+    .safety-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .meter {
+      height: 8px;
+      margin-top: 12px;
+      overflow: hidden;
+      background: #20384e;
+      border-radius: 100px;
+    }
+
+    .meter span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--green);
+      border-radius: inherit;
+      transition: 0.4s;
+    }
+
+    .state {
+      padding: 9px 13px;
+      color: #07111f;
+      background: var(--green);
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+
+    .note {
+      margin-top: 15px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 0 35px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 550px) {
+      .container {
+        width: calc(100% - 20px);
+      }
+
+      .status {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 40px;
+      }
+
+      .metric-grid,
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <span class="brand-icon">S</span>
+        SpanLab
+      </div>
+
+      <div class="status">
+        Calculation engine ready
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Structural engineering workspace</div>
+
+          <h1>
+            Test the span.<br>
+            <span>Know the limits.</span>
+          </h1>
+
+          <p>
+            Explore how beam span, point-load position, material and section
+            geometry affect structural performance.
+          </p>
+        </div>
+
+        <aside class="formula-card">
+          <strong>Active model</strong>
+
+          <p>
+            Single point load acting on a simply supported rectangular beam.
+          </p>
+
+          <div class="formula">
+            R<sub>A</sub> = P(L − a) / L
+          </div>
+        </aside>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel controls">
+          <div class="panel-heading">
+            <h2>Design inputs</h2>
+            <span class="badge">SI UNITS</span>
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="span">Beam span</label>
+              <output id="spanOutput">6.0 m</output>
+            </div>
+
+            <input
+              id="span"
+              type="range"
+              min="2"
+              max="12"
+              step="0.1"
+              value="6"
+            >
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="load">Point load</label>
+              <output id="loadOutput">25 kN</output>
+            </div>
+
+            <input
+              id="load"
+              type="range"
+              min="1"
+              max="100"
+              step="1"
+              value="25"
+            >
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="position">Load position</label>
+              <output id="positionOutput">50%</output>
+            </div>
+
+            <input
+              id="position"
+              type="range"
+              min="10"
+              max="90"
+              step="1"
+              value="50"
+            >
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="width">Section width</label>
+              <output id="widthOutput">250 mm</output>
+            </div>
+
+            <input
+              id="width"
+              type="range"
+              min="100"
+              max="500"
+              step="10"
+              value="250"
+            >
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="depth">Section depth</label>
+              <output id="depthOutput">450 mm</output>
+            </div>
+
+            <input
+              id="depth"
+              type="range"
+              min="150"
+              max="900"
+              step="10"
+              value="450"
+            >
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label for="material">Beam material</label>
+            </div>
+
+            <select id="material">
+              <option value="200000,250,STEEL">
+                Structural steel — E 200 GPa
+              </option>
+
+              <option value="30000,25,CONCRETE">
+                Concrete — E 30 GPa
+              </option>
+
+              <option value="11000,12,TIMBER">
+                Timber — E 11 GPa
+              </option>
+
+              <option value="70000,160,ALUMINIUM">
+                Aluminium — E 70 GPa
+              </option>
+            </select>
+          </div>
+
+          <div class="buttons">
+            <button class="primary-button" id="calculateButton">
+              Run analysis
+            </button>
+
+            <button class="secondary-button" id="resetButton">
+              Reset model
+            </button>
+          </div>
+        </aside>
+
+        <section class="panel results">
+          <div class="panel-heading">
+            <h2>Live structural response</h2>
+            <span class="badge" id="materialBadge">STEEL</span>
+          </div>
+
+          <div class="beam-stage">
+            <div class="load-arrow" id="loadArrow">
+              <span id="arrowLabel">25 kN</span>
+              <i></i>
+            </div>
+
+            <div class="beam"></div>
+
+            <div class="support left-support"></div>
+            <div class="support right-support"></div>
+
+            <div class="dimension" id="dimension">
+              6.0 m span
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric">
+              <small>LEFT REACTION</small>
+              <strong id="reactionA">12.50</strong>
+              <em>kN</em>
+            </article>
+
+            <article class="metric">
+              <small>RIGHT REACTION</small>
+              <strong id="reactionB">12.50</strong>
+              <em>kN</em>
+            </article>
+
+            <article class="metric">
+              <small>MAXIMUM MOMENT</small>
+              <strong id="maximumMoment">37.50</strong>
+              <em>kN·m</em>
+            </article>
+
+            <article class="metric">
+              <small>ESTIMATED DEFLECTION</small>
+              <strong id="deflection">0.67</strong>
+              <em>mm</em>
+            </article>
+          </div>
+
+          <div class="safety-card">
+            <div>
+              <h3 id="safetyTitle">
+                Section response: acceptable
+              </h3>
+
+              <p id="safetyText">
+                Estimated bending utilization is within the selected limit.
+              </p>
+
+              <div class="meter">
+                <span id="meterFill"></span>
+              </div>
+            </div>
+
+            <div class="state" id="state">
+              PASS
+            </div>
+          </div>
+
+          <p class="note">
+            This calculator is intended for education and preliminary
+            exploration only. A qualified engineer must verify real designs,
+            load combinations, material behavior, stability, connections and
+            applicable design codes.
+          </p>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <span>SpanLab — Structural concept explorer</span>
+      <span>Private and local — no information is uploaded</span>
+    </footer>
+  </div>
+
+  <script>
+    const spanInput = document.getElementById("span");
+    const loadInput = document.getElementById("load");
+    const positionInput = document.getElementById("position");
+    const widthInput = document.getElementById("width");
+    const depthInput = document.getElementById("depth");
+    const materialInput = document.getElementById("material");
+
+    function calculateBeam() {
+      const span = Number(spanInput.value);
+      const load = Number(loadInput.value);
+      const positionRatio = Number(positionInput.value) / 100;
+      const width = Number(widthInput.value);
+      const depth = Number(depthInput.value);
+
+      const materialData = materialInput.value.split(",");
+
+      const elasticModulus = Number(materialData[0]);
+      const allowableStress = Number(materialData[1]);
+      const materialName = materialData[2];
+
+      const distanceA = span * positionRatio;
+      const distanceB = span - distanceA;
+
+      const reactionA = load * distanceB / span;
+      const reactionB = load * distanceA / span;
+
+      const maximumMoment = reactionA * distanceA;
+
+      const momentOfInertia =
+        width * Math.pow(depth, 3) / 12;
+
+      const sectionModulus =
+        width * Math.pow(depth, 2) / 6;
+
+      const bendingStress =
+        maximumMoment * 1000000 / sectionModulus;
+
+      const distanceAMillimeters = distanceA * 1000;
+      const distanceBMillimeters = distanceB * 1000;
+      const spanMillimeters = span * 1000;
+      const loadNewtons = load * 1000;
+
+      const deflection =
+        (
+          loadNewtons *
+          Math.pow(distanceAMillimeters, 2) *
+          Math.pow(distanceBMillimeters, 2)
+        ) /
+        (
+          3 *
+          elasticModulus *
+          momentOfInertia *
+          spanMillimeters
+        );
+
+      const utilization =
+        bendingStress / allowableStress * 100;
+
+      const passed = utilization <= 100;
+
+      document.getElementById("spanOutput").textContent =
+        span.toFixed(1) + " m";
+
+      document.getElementById("loadOutput").textContent =
+        load.toFixed(0) + " kN";
+
+      document.getElementById("positionOutput").textContent =
+        Math.round(positionRatio * 100) + "%";
+
+      document.getElementById("widthOutput").textContent =
+        width.toFixed(0) + " mm";
+
+      document.getElementById("depthOutput").textContent =
+        depth.toFixed(0) + " mm";
+
+      document.getElementById("reactionA").textContent =
+        reactionA.toFixed(2);
+
+      document.getElementById("reactionB").textContent =
+        reactionB.toFixed(2);
+
+      document.getElementById("maximumMoment").textContent =
+        maximumMoment.toFixed(2);
+
+      document.getElementById("deflection").textContent =
+        deflection.toFixed(2);
+
+      document.getElementById("dimension").textContent =
+        span.toFixed(1) + " m span";
+
+      document.getElementById("arrowLabel").textContent =
+        load.toFixed(0) + " kN";
+
+      document.getElementById("materialBadge").textContent =
+        materialName;
+
+      document.getElementById("loadArrow").style.left =
+        (9 + positionRatio * 82) + "%";
+
+      const meterFill = document.getElementById("meterFill");
+
+      meterFill.style.width =
+        Math.min(utilization, 100) + "%";
+
+      if (utilization > 100) {
+        meterFill.style.background = "var(--red)";
+      } else if (utilization > 75) {
+        meterFill.style.background = "var(--yellow)";
+      } else {
+        meterFill.style.background = "var(--green)";
+      }
+
+      const state = document.getElementById("state");
+
+      state.textContent = passed ? "PASS" : "REVIEW";
+
+      state.style.background = passed
+        ? "var(--green)"
+        : "var(--red)";
+
+      document.getElementById("safetyTitle").textContent =
+        "Section response: " +
+        (passed ? "acceptable" : "overstressed");
+
+      document.getElementById("safetyText").textContent =
+        "Estimated bending utilization is " +
+        utilization.toFixed(0) +
+        "% of the selected material limit.";
+    }
+
+    const controls = [
+      spanInput,
+      loadInput,
+      positionInput,
+      widthInput,
+      depthInput
+    ];
+
+    controls.forEach(function (control) {
+      control.addEventListener("input", calculateBeam);
+    });
+
+    materialInput.addEventListener(
+      "change",
+      calculateBeam
+    );
+
+    document
+      .getElementById("calculateButton")
+      .addEventListener("click", calculateBeam);
+
+    document
+      .getElementById("resetButton")
+      .addEventListener("click", function () {
+        spanInput.value = 6;
+        loadInput.value = 25;
+        positionInput.value = 50;
+        widthInput.value = 250;
+        depthInput.value = 450;
+        materialInput.value = "200000,250,STEEL";
+
+        calculateBeam();
+      });
+
+    calculateBeam();
+  </script>
+</body>
+</html>
